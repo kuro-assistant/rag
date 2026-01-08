@@ -1,5 +1,8 @@
-from concurrent import futures
 import grpc
+import os
+import sys
+sys.path.append(os.getcwd())
+from concurrent import futures
 from rag.db.qdrant_wrapper import QdrantSubstrate
 from common.utils.health import HealthServicer
 from common.proto import kuro_pb2
