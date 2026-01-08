@@ -1,6 +1,7 @@
-import grpc
 from concurrent import futures
+import grpc
 from rag.db.qdrant_wrapper import QdrantSubstrate
+from common.utils.health import HealthServicer
 from common.proto import kuro_pb2
 from common.proto import kuro_pb2_grpc
 
@@ -27,6 +28,7 @@ class RagServicer(kuro_pb2_grpc.RagServiceServicer):
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     kuro_pb2_grpc.add_RagServiceServicer_to_server(RagServicer(), server)
+    kuro_pb2_grpc.add_HealthServiceServicer_to_server(HealthServicer("RAG"), server)
     server.add_insecure_port('[::]:50052')
     print("RAG Knowledge Substrate (VM 2) starting on port 50052...")
     server.start()
