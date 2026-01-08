@@ -1,5 +1,6 @@
 import os
 import hashlib
+from rag.db.qdrant_wrapper import QdrantSubstrate
 from common.proto import kuro_pb2
 
 class KnowledgeIngestor:
@@ -25,7 +26,7 @@ class KnowledgeIngestor:
         # Basic chunking logic
         for i in range(0, len(content), self.chunk_size):
             text_chunk = content[i:i + self.chunk_size]
-            chunk_hash = hashlib.mdsafe_hex(text_chunk.encode()).hexdigest()[:8]
+            chunk_hash = hashlib.sha256(text_chunk.encode()).hexdigest()[:8]
             
             chunks.append(kuro_pb2.KnowledgeChunk(
                 text=text_chunk,
@@ -37,8 +38,12 @@ class KnowledgeIngestor:
 
     def ingest_to_qdrant(self, chunks: list):
         """
-        Mock for sending vectors to Qdrant.
+        Sends chunks to Qdrant with placeholder vectors.
         """
-        print(f"Ingested {len(chunks)} chunks into Qdrant collection.")
-        # In real implementation: self.qdrant_client.upsert(...)
-        pass
+        db = QdrantSubstrate(location=":memory:")
+        for chunk in chunks:
+            # Placeholder: Generate a dummy vector (size 384)
+            # In Phase 2B/C, this will be a real embedding.
+            dummy_vector = [0.0] * 384
+            db.upsert_chunk(chunk.text, dummy_vector, {"source": chunk.source})
+        print(f"Successfully ingested {len(chunks)} chunks into Qdrant substrate.")

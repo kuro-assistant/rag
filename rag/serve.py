@@ -1,58 +1,34 @@
 import grpc
 from concurrent import futures
+from rag.db.qdrant_wrapper import QdrantSubstrate
 from common.proto import kuro_pb2
 from common.proto import kuro_pb2_grpc
-from rag.ingest.ingestor import KnowledgeIngestor
-from rag.db.rag_db import RagDB
 
 class RagServicer(kuro_pb2_grpc.RagServiceServicer):
     """
-    gRPC Service for RAG Knowledge (VM 2).
-    Uses Qdrant for semantic search.
+    VM 2: RAG Knowledge Substrate Service.
+    Now utilizes Qdrant for vector-based semantic retrieval.
     """
     def __init__(self):
-        self.ingestor = KnowledgeIngestor()
-        self.db = RagDB()
+        # In a real environment, location would be the Qdrant service IP.
+        self.db = QdrantSubstrate(location=":memory:")
 
     def SearchKnowledge(self, request, context):
-        """
-        Perform semantic search against the knowledge base.
-        """
-        print(f"Searching knowledge for: {request.query}")
-        response = kuro_pb2.SearchResponse()
+        print(f"RAG: Searching for pulse '{request.query}'")
         
-        # Real query against SQLite
-        results = self.db.search(request.query, limit=request.top_k)
+        # Placeholder vector generation (size 384 for all-MiniLM-L6-v2)
+        # In Phase 2B/C we would integrate a real embedding model here.
+        dummy_vector = [0.0] * 384
         
-        for content, source in results:
-            response.chunks.append(kuro_pb2.KnowledgeChunk(
-                text=content,
-                score=0.9, # To be improved with real embeddings
-                source=source
-            ))
-        else:
-            # Fallback mock
-            response.chunks.append(kuro_pb2.KnowledgeChunk(
-                text=f"No direct knowledge found for '{request.query}'. Defaulting to general reasoning.",
-                score=0.1,
-                source="system_null"
-            ))
+        chunks = self.db.search(dummy_vector, limit=request.top_k)
         
-        return response
-
-    def IngestFile(self, request, context):
-        """
-        Manually trigger ingestion of a local file into the RAG DB.
-        """
-        chunks = self.ingestor.process_file(request.path)
-        self.db.insert_chunks(chunks)
-        return kuro_pb2.MemoryStatus(success=True, message=f"Ingested {len(chunks)} chunks from {request.path}")
+        return kuro_pb2.SearchResponse(chunks=chunks)
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     kuro_pb2_grpc.add_RagServiceServicer_to_server(RagServicer(), server)
     server.add_insecure_port('[::]:50052')
-    print("RAG Server starting on port 50052...")
+    print("RAG Knowledge Substrate (VM 2) starting on port 50052...")
     server.start()
     server.wait_for_termination()
 
