@@ -2,7 +2,15 @@ import grpc
 import os
 import sys
 sys.path.append(os.getcwd())
+sys.stdout.reconfigure(line_buffering=True)
+import logging
 from concurrent import futures
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("RAG")
 from rag.db.qdrant_wrapper import QdrantSubstrate
 from common.utils.health import HealthServicer
 from common.proto import kuro_pb2
@@ -32,7 +40,7 @@ def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     kuro_pb2_grpc.add_RagServiceServicer_to_server(RagServicer(), server)
     kuro_pb2_grpc.add_HealthServiceServicer_to_server(HealthServicer("RAG"), server)
-    server.add_insecure_port('[::]:50052')
+    server.add_insecure_port('0.0.0.0:50052')
     print("RAG Knowledge Substrate (VM 2) starting on port 50052...")
     server.start()
     server.wait_for_termination()
